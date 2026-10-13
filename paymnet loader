@@ -1,0 +1,300 @@
+<!-- 
+Online payment late kyun hoti hai? masla sirf is chotte se javascript code ka hai.. aen smjhte hain!"
+Processing Payment Ka Sach! 💳🔥" -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Beginner JS while Loop — Payment Status Visualizer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@500;600;700&family=Inter:wght@400;600;700;800&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0d0d0d;
+            color: #f3f4f6;
+        }
+
+        .code-font {
+            font-family: 'Fira Code', monospace;
+        }
+
+        /* Highlight animation for video recording */
+        .code-line {
+            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
+            padding: 8px 12px;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .code-line.active {
+            background-color: rgba(34, 197, 94, 0.2);
+            border-left-color: #22c55e;
+            color: #ffffff;
+            font-weight: 700;
+            transform: translateX(4px);
+        }
+
+        /* Pulse spinner animation */
+        @keyframes pulse-grow {
+            0%, 100% { transform: scale(1); opacity: 0.8; }
+            50% { transform: scale(1.08); opacity: 1; }
+        }
+        .pulse-anim {
+            animation: pulse-grow 1.4s infinite ease-in-out;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-center items-center p-4 lg:p-8">
+
+    <!-- Header Section -->
+    <header class="w-full max-w-4xl mb-6 flex justify-between items-center border-b border-gray-800 pb-4">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-green-500/20 border border-green-500/40 flex items-center justify-center font-bold text-green-400 shadow-lg shadow-green-500/20">
+                <i class="fa-solid fa-code"></i>
+            </div>
+            <div>
+                <h1 class="text-xl font-black text-white tracking-tight">JavaScript <span class="text-green-400">while Loop</span></h1>
+                <p class="text-xs text-gray-400">Beginner Payment Checking Concept</p>
+            </div>
+        </div>
+
+        <button onclick="resetDemo()" class="px-4 py-2 bg-gray-900 hover:bg-gray-800 border border-gray-700 text-gray-200 text-xs font-bold rounded-xl transition-all flex items-center gap-2">
+            <i class="fa-solid fa-rotate-right text-green-400"></i> Reset Demo
+        </button>
+    </header>
+
+    <!-- Main Visualizer Grid -->
+    <main class="w-full max-w-4xl grid grid-cols-1 md:grid-cols-2 gap-6 items-stretch">
+
+        <!-- ================= LEFT COLUMN: PAYMENT UI ================= -->
+        <section class="bg-[#141414] border border-gray-800 rounded-2xl p-6 flex flex-col justify-between shadow-2xl relative overflow-hidden">
+            <div>
+                <div class="flex justify-between items-center mb-6">
+                    <span class="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                        <i class="fa-solid fa-cart-shopping text-green-400"></i> Payment App
+                    </span>
+                    <span class="text-xs font-bold font-mono px-3 py-1 bg-gray-900 text-gray-300 border border-gray-800 rounded-full">
+                        #ORDER-101
+                    </span>
+                </div>
+
+                <!-- Price Card -->
+                <div class="mb-6 p-4 bg-[#0a0a0a] rounded-xl border border-gray-800 flex justify-between items-center">
+                    <div>
+                        <div class="text-xs text-gray-500 uppercase font-bold">Amount Due</div>
+                        <div class="text-2xl font-black text-white">$19.99 <span class="text-xs font-normal text-gray-400">USD</span></div>
+                    </div>
+                    <div class="w-10 h-10 rounded-full bg-green-500/10 border border-green-500/30 flex items-center justify-center text-green-400">
+                        <i class="fa-solid fa-[#22c55e] fa-receipt"></i>
+                    </div>
+                </div>
+
+                <!-- Action Button -->
+                <button id="startBtn" onclick="runLoop()" class="w-full py-4 bg-green-500 hover:bg-green-400 text-black font-extrabold text-sm rounded-xl shadow-lg shadow-green-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer">
+                    <i class="fa-solid fa-play"></i> Run Payment Check
+                </button>
+            </div>
+
+            <!-- Visual Status Box -->
+            <div class="mt-8 pt-6 border-t border-gray-800">
+                <div class="text-xs text-gray-400 font-bold uppercase mb-3">Live Status Screen</div>
+                <div id="statusCard" class="w-full p-5 rounded-xl bg-gray-900 border border-gray-800 text-center flex flex-col items-center justify-center gap-3 transition-all">
+                    <div id="statusIcon" class="w-12 h-12 rounded-full bg-yellow-500/10 text-yellow-400 border border-yellow-500/30 flex items-center justify-center text-xl">
+                        <i class="fa-solid fa-spinner fa-spin"></i>
+                    </div>
+                    <div>
+                        <div id="statusTitle" class="text-sm font-bold text-gray-200">Ready to Process</div>
+                        <div id="statusDesc" class="text-xs text-gray-500 mt-0.5">Click button to trigger loop execution</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ================= RIGHT COLUMN: CODE EXECUTION ================= -->
+        <section class="bg-[#141414] border border-gray-800 rounded-2xl p-6 flex flex-col justify-between shadow-2xl">
+            <div>
+                <div class="flex justify-between items-center mb-4 pb-3 border-b border-gray-800">
+                    <span class="text-xs font-bold text-gray-400 uppercase tracking-wider flex items-center gap-2">
+                        <i class="fa-solid fa-code text-green-400"></i> Code Execution
+                    </span>
+                    <span class="text-[10px] code-font text-gray-500 uppercase">Live Step Highlight</span>
+                </div>
+
+                <!-- Code Container -->
+                <div id="code-box" class="code-font text-xs sm:text-sm text-gray-300 space-y-1.5 my-2">
+                    <!-- Lines injected dynamically -->
+                </div>
+            </div>
+
+            <!-- Simple Variable Inspector Footer -->
+            <div class="mt-6 pt-4 border-t border-gray-800">
+                <div class="text-[10px] code-font text-gray-500 uppercase mb-2">Memory Variable</div>
+                <div class="bg-[#0a0a0a] p-3 rounded-xl border border-gray-800 flex justify-between items-center code-font text-xs">
+                    <span class="text-purple-400 font-bold">status</span>
+                    <span id="var-status-display" class="text-yellow-400 font-bold px-3 py-1 bg-yellow-950/40 border border-yellow-800/50 rounded-lg">
+                        "processing"
+                    </span>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Interactive JavaScript Engine -->
+    <script>
+        // State variables
+        let status = "processing";
+        let isRunning = false;
+
+        // Web Audio API Sound generator
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSfx(freq, type = 'sine', duration = 0.15) {
+            try {
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = type;
+                osc.frequency.value = freq;
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                gain.gain.setValueAtTime(0.12, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch(e) {}
+        }
+
+        // Delay helper for reel visual steps
+        const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
+
+        // Code Template
+        const codeLines = [
+            { id: 1, text: `<span class="text-purple-400">let</span> status = <span class="text-yellow-300">"processing"</span>;` },
+            { id: 2, text: `` },
+            { id: 3, text: `<span class="text-purple-400">while</span> (status === <span class="text-yellow-300">"processing"</span>) {` },
+            { id: 4, text: `  <span class="text-blue-400">console</span>.<span class="text-yellow-400">log</span>(<span class="text-green-300">"Checking payment..."</span>);` },
+            { id: 5, text: `  status = <span class="text-green-300">"success"</span>;` },
+            { id: 6, text: `}` },
+            { id: 7, text: `` },
+            { id: 8, text: `<span class="text-blue-400">console</span>.<span class="text-yellow-400">log</span>(<span class="text-green-300">"Payment Done! 🎉"</span>);` }
+        ];
+
+        function renderCode() {
+            const container = document.getElementById('code-box');
+            container.innerHTML = codeLines.map(l => `
+                <div id="line-${l.id}" class="code-line flex items-center gap-3">
+                    <span class="text-gray-600 text-[10px] w-4 text-right select-none">${l.id}</span>
+                    <span class="flex-1">${l.text}</span>
+                </div>
+            `).join('');
+        }
+
+        function highlight(lineNum) {
+            document.querySelectorAll('.code-line').forEach(el => el.classList.remove('active'));
+            if (lineNum) {
+                const target = document.getElementById(`line-${lineNum}`);
+                if (target) target.classList.add('active');
+            }
+        }
+
+        function updateUI() {
+            const display = document.getElementById('var-status-display');
+            const icon = document.getElementById('statusIcon');
+            const title = document.getElementById('statusTitle');
+            const desc = document.getElementById('statusDesc');
+
+            display.innerText = `"${status}"`;
+
+            if (status === "processing") {
+                display.className = "text-yellow-400 font-bold px-3 py-1 bg-yellow-950/40 border border-yellow-800/50 rounded-lg";
+                icon.className = "w-12 h-12 rounded-full bg-yellow-500/10 text-yellow-400 border border-yellow-500/30 flex items-center justify-center text-xl pulse-anim";
+                icon.innerHTML = `<i class="fa-solid fa-spinner fa-spin"></i>`;
+                title.innerText = "Processing Payment...";
+                title.className = "text-sm font-bold text-yellow-400";
+                desc.innerText = "Loop condition (status === 'processing') is TRUE";
+            } else if (status === "success") {
+                display.className = "text-green-400 font-bold px-3 py-1 bg-green-950/40 border border-green-800/50 rounded-lg";
+                icon.className = "w-12 h-12 rounded-full bg-green-500/20 text-green-400 border border-green-500/40 flex items-center justify-center text-xl shadow-lg shadow-green-500/20";
+                icon.innerHTML = `<i class="fa-solid fa-circle-check"></i>`;
+                title.innerText = "Payment Done! 🎉";
+                title.className = "text-sm font-bold text-green-400";
+                desc.innerText = "Loop ended because status is now 'success'";
+            }
+        }
+
+        async function runLoop() {
+            if (isRunning) return;
+            isRunning = true;
+            document.getElementById('startBtn').disabled = true;
+            document.getElementById('startBtn').classList.add('opacity-50', 'cursor-not-allowed');
+
+            // Reset initial state
+            status = "processing";
+            updateUI();
+
+            // Line 1: Declare status variable
+            highlight(1);
+            playSfx(350);
+            await sleep(800);
+
+            // Line 3: Evaluate while condition (TRUE)
+            highlight(3);
+            playSfx(440);
+            await sleep(900);
+
+            // Line 4: Console log inside loop
+            highlight(4);
+            playSfx(520);
+            await sleep(900);
+
+            // Line 5: Reassign status to "success"
+            highlight(5);
+            status = "success";
+            updateUI();
+            playSfx(660);
+            await sleep(1000);
+
+            // Line 3: Check condition again (NOW FALSE)
+            highlight(3);
+            playSfx(300, 'sawtooth');
+            await sleep(900);
+
+            // Line 8: Exit loop and log final success
+            highlight(8);
+            playSfx(880, 'sine', 0.3);
+            await sleep(400);
+
+            isRunning = false;
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('startBtn').classList.remove('opacity-50', 'cursor-not-allowed');
+        }
+
+        function resetDemo() {
+            status = "processing";
+            isRunning = false;
+            document.getElementById('startBtn').disabled = false;
+            document.getElementById('startBtn').classList.remove('opacity-50', 'cursor-not-allowed');
+            highlight(1);
+            updateUI();
+            
+            // Initial idle UI reset
+            document.getElementById('statusTitle').innerText = "Ready to Process";
+            document.getElementById('statusTitle').className = "text-sm font-bold text-gray-200";
+            document.getElementById('statusDesc').innerText = "Click button to trigger loop execution";
+            document.getElementById('statusIcon').className = "w-12 h-12 rounded-full bg-gray-800 text-gray-400 border border-gray-700 flex items-center justify-center text-xl";
+            document.getElementById('statusIcon').innerHTML = `<i class="fa-solid fa-play"></i>`;
+        }
+
+        // Initial setup on load
+        window.onload = () => {
+            renderCode();
+            resetDemo();
+        };
+    </script>
+</body>
+</html>
