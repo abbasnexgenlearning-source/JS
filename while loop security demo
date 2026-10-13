@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Account Lock — JS while Loop Interactive Demo</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Inter:wght@300;400;500;600;700;800&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0b0f19;
+            color: #f3f4f6;
+        }
+
+        .code-font {
+            font-family: 'Fira Code', monospace;
+        }
+
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #111827;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #374151;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #4b5563;
+        }
+
+        /* Active code line highlight */
+        .code-line {
+            transition: all 0.25s ease;
+            border-left: 3px solid transparent;
+            padding-left: 0.75rem;
+            border-radius: 0 0.375rem 0.375rem 0;
+        }
+        .code-line.active {
+            background-color: rgba(239, 68, 68, 0.2);
+            border-left-color: #ef4444;
+            color: #ffffff;
+            font-weight: 600;
+        }
+        .code-line.active-success {
+            background-color: rgba(34, 197, 94, 0.2);
+            border-left-color: #22c55e;
+            color: #ffffff;
+            font-weight: 600;
+        }
+
+        /* Shake animation for locked state / wrong password */
+        @keyframes lock-shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-8px); }
+            40%, 80% { transform: translateX(8px); }
+        }
+        .shake-animation {
+            animation: lock-shake 0.4s ease-in-out;
+        }
+
+        /* Glowing pulse animation */
+        @keyframes pulse-red-glow {
+            0%, 100% { box-shadow: 0 0 15px rgba(239, 68, 68, 0.2); }
+            50% { box-shadow: 0 0 30px rgba(239, 68, 68, 0.6); }
+        }
+        .glow-locked {
+            animation: pulse-red-glow 2s infinite;
+            border-color: #ef4444 !important;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col justify-between overflow-x-hidden selection:bg-red-500 selection:text-white">
+
+    <!-- Top Header -->
+    <header class="border-b border-gray-800 bg-gray-900/90 backdrop-blur-md sticky top-0 z-50 px-4 lg:px-8 py-3.5">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-3">
+            <div class="flex items-center gap-3">
+                <div class="bg-gradient-to-tr from-red-600 to-amber-500 p-2.5 rounded-xl shadow-lg shadow-red-500/20">
+                    <i class="fa-solid fa-lock text-xl text-white"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold bg-gradient-to-r from-white via-gray-200 to-gray-400 bg-clip-text text-transparent">
+                        JavaScript <span class="text-red-500">while Loop</span>: Security Demo
+                    </h1>
+                    <p class="text-xs text-gray-400">Account Lock Visualizer — Enter wrong password 3 times & observe!</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-3">
+                <button onclick="resetApp()" class="px-3.5 py-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 text-gray-200 rounded-xl text-xs font-semibold transition-all flex items-center gap-2">
+                    <i class="fa-solid fa-rotate-right"></i> Reset System
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Body Container -->
+    <main class="max-w-7xl w-full mx-auto p-4 lg:p-8 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- LEFT COLUMN: Interactive Login Arena & Inspector (6 cols) -->
+        <section class="lg:col-span-6 flex flex-col gap-6">
+
+            <!-- CARD 1: Interactive Login Form / Security Panel -->
+            <div id="login-card" class="bg-gray-900/90 border border-gray-800 rounded-2xl p-6 shadow-2xl flex flex-col gap-5 transition-all">
+                <div class="flex justify-between items-center border-b border-gray-800 pb-4">
+                    <div class="flex items-center gap-2">
+                        <span id="status-badge-dot" class="inline-block w-3 h-3 rounded-full bg-emerald-500 animate-pulse"></span>
+                        <h2 id="status-badge-title" class="font-bold text-lg text-white">Security Authentication Screen</h2>
+                    </div>
+                    <span id="attempts-badge" class="text-xs font-mono font-bold px-3 py-1 rounded-full bg-red-950/80 text-red-400 border border-red-800/60 flex items-center gap-1.5">
+                        <i class="fa-solid fa-shield-halved"></i>
+                        <span id="badge-attempts-count">3</span> Attempts Left
+                    </span>
+                </div>
+
+                <!-- Live Login Interface Box -->
+                <div id="login-form-box" class="bg-gray-950 p-6 rounded-xl border border-gray-800 flex flex-col gap-4 relative overflow-hidden">
+                    
+                    <!-- Locked Overlay Screen -->
+                    <div id="locked-overlay" class="hidden absolute inset-0 bg-gray-950/95 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center z-20">
+                        <div class="w-16 h-16 rounded-full bg-red-600/20 border-2 border-red-500 flex items-center justify-center mb-3 animate-bounce">
+                            <i class="fa-solid fa-user-lock text-3xl text-red-500"></i>
+                        </div>
+                        <h3 class="text-xl font-extrabold text-white mb-1">ACCOUNT LOCKED 🔒</h3>
+                        <p class="text-xs text-gray-400 mb-4 max-w-sm">
+                            The <span class="code-font text-red-400">while (attemptsLeft > 0)</span> condition evaluated to <span class="text-red-400 font-bold">FALSE (0 &gt; 0)</span>. The loop terminated and set <span class="code-font text-amber-300">isLocked = true</span>.
+                        </p>
+                        <button onclick="resetApp()" class="px-5 py-2.5 bg-gradient-to-r from-red-600 to-amber-600 hover:from-red-500 hover:to-amber-500 text-white font-bold rounded-xl shadow-lg shadow-red-600/30 text-xs transition-all hover:scale-105 active:scale-95">
+                            <i class="fa-solid fa-rotate-right mr-1.5"></i> Restart while Loop
+                        </button>
+                    </div>
+
+                    <!-- Granted Overlay Screen -->
+                    <div id="granted-overlay" class="hidden absolute inset-0 bg-gray-950/95 backdrop-blur-md flex flex-col items-center justify-center p-6 text-center z-20">
+                        <div class="w-16 h-16 rounded-full bg-emerald-600/20 border-2 border-emerald-500 flex items-center justify-center mb-3 animate-bounce">
+                            <i class="fa-solid fa-circle-check text-3xl text-emerald-400"></i>
+                        </div>
+                        <h3 class="text-xl font-extrabold text-white mb-1">ACCESS GRANTED 🎉</h3>
+                        <p class="text-xs text-gray-400 mb-4 max-w-sm">
+                            Correct password entered! Executed <span class="code-font text-emerald-400">break</span> statement to exit the loop immediately without locking the account.
+                        </p>
+                        <button onclick="resetApp()" class="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-xl shadow-lg shadow-emerald-600/30 text-xs transition-all hover:scale-105 active:scale-95">
+                            <i class="fa-solid fa-rotate-right mr-1.5"></i> Try Demo Again
+                        </button>
+                    </div>
+
+                    <!-- Input Fields & Form Controls -->
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-300 mb-2">
+                            Enter Account Password <span class="text-gray-500 font-normal">(Correct password: <code class="text-emerald-400 font-mono">secret123</code>)</span>
+                        </label>
+                        <div class="relative">
+                            <input type="password" id="passwordInput" placeholder="Enter password..." class="w-full bg-gray-900 border border-gray-700 text-white text-sm rounded-xl px-4 py-3 pr-10 focus:outline-none focus:border-red-500 transition-colors code-font">
+                            <button onclick="togglePasswordVisibility()" class="absolute right-3 top-3.5 text-gray-400 hover:text-gray-200">
+                                <i id="eyeIcon" class="fa-solid fa-eye text-sm"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <button onclick="submitPassword()" class="w-full py-3 bg-red-600 hover:bg-red-500 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-red-600/20 transition-all active:scale-[0.98] flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-key"></i> Submit Password
+                    </button>
+
+                    <!-- Quick Preset Testing Buttons -->
+                    <div class="pt-2 border-t border-gray-800 flex flex-col sm:flex-row gap-2">
+                        <button onclick="tryWrongPassword()" class="flex-1 py-2 px-3 bg-red-950/50 hover:bg-red-900/60 border border-red-800/60 text-red-300 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5">
+                            <i class="fa-solid fa-circle-xmark"></i> Quick Wrong Password
+                        </button>
+                        <button onclick="tryCorrectPassword()" class="flex-1 py-2 px-3 bg-emerald-950/50 hover:bg-emerald-900/60 border border-emerald-800/60 text-emerald-300 text-xs font-semibold rounded-lg transition-all flex items-center justify-center gap-1.5">
+                            <i class="fa-solid fa-circle-check"></i> Try Correct Password
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Attempt Hearts Indicator -->
+                <div class="bg-gray-950 p-4 rounded-xl border border-gray-800 flex flex-col gap-2">
+                    <div class="flex justify-between items-center text-xs">
+                        <span class="text-gray-400 font-semibold uppercase tracking-wider">Remaining Security Tokens</span>
+                        <span id="hearts-numeric" class="font-mono text-red-400 font-bold">3 / 3</span>
+                    </div>
+                    <div id="heartsContainer" class="flex items-center justify-center gap-4 py-2 text-3xl">
+                        <!-- Rendered via JS -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- CARD 2: Variable State Inspector -->
+            <div class="bg-gray-900/90 border border-gray-800 rounded-2xl p-5 shadow-xl flex flex-col gap-4">
+                <h3 class="text-sm font-bold text-gray-200 flex items-center gap-2">
+                    <i class="fa-solid fa-microchip text-blue-400"></i> Memory Variable Inspector
+                </h3>
+                <div class="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs">
+                    <div class="bg-gray-950 p-3 rounded-xl border border-gray-800/80 flex flex-col gap-1">
+                        <span class="text-gray-400 text-[10px] uppercase font-semibold">Variable (attemptsLeft)</span>
+                        <span id="var-attempts" class="code-font text-xl font-bold text-red-400">3</span>
+                    </div>
+                    <div class="bg-gray-950 p-3 rounded-xl border border-gray-800/80 flex flex-col gap-1">
+                        <span class="text-gray-400 text-[10px] uppercase font-semibold">Variable (isLocked)</span>
+                        <span id="var-isLocked" class="code-font text-xl font-bold text-emerald-400">false</span>
+                    </div>
+                    <div class="bg-gray-950 p-3 rounded-xl border border-gray-800/80 flex flex-col gap-1 col-span-2 sm:col-span-1">
+                        <span class="text-gray-400 text-[10px] uppercase font-semibold">while Condition</span>
+                        <span id="var-condition" class="code-font text-xs font-bold text-emerald-400 truncate mt-1">
+                            attemptsLeft > 0 (TRUE)
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+        </section>
+
+        <!-- RIGHT COLUMN: Code Inspector & Terminal Output (6 cols) -->
+        <section class="lg:col-span-6 flex flex-col gap-6">
+
+            <!-- Code Inspector Card -->
+            <div class="bg-gray-900/90 border border-gray-800 rounded-2xl overflow-hidden shadow-2xl flex flex-col">
+                <div class="bg-gray-950 px-4 py-3 border-b border-gray-800 flex justify-between items-center">
+                    <div class="flex items-center gap-2">
+                        <div class="flex gap-1.5">
+                            <span class="w-3 h-3 rounded-full bg-red-500/80 inline-block"></span>
+                            <span class="w-3 h-3 rounded-full bg-amber-500/80 inline-block"></span>
+                            <span class="w-3 h-3 rounded-full bg-emerald-500/80 inline-block"></span>
+                        </div>
+                        <span class="text-xs code-font text-gray-400 ml-2">password_security.js</span>
+                    </div>
+                    <span class="text-[10px] font-mono text-gray-500 uppercase">Live Execution</span>
+                </div>
+
+                <div id="codeDisplay" class="p-4 bg-gray-950 code-font text-xs sm:text-sm text-gray-300 leading-relaxed overflow-x-auto">
+                    <!-- Dynamic code rendering via JS -->
+                </div>
+            </div>
+
+            <!-- Terminal Console Output Card -->
+            <div class="bg-gray-900/90 border border-gray-800 rounded-2xl overflow-hidden shadow-2xl flex-1 flex flex-col min-h-[240px]">
+                <div class="bg-gray-950 px-4 py-3 border-b border-gray-800 flex justify-between items-center">
+                    <div class="flex items-center gap-2">
+                        <i class="fa-solid fa-terminal text-emerald-400 text-xs"></i>
+                        <span class="text-xs code-font text-gray-300 font-semibold">Console Terminal Log</span>
+                    </div>
+                    <button onclick="clearConsole()" class="text-[11px] text-gray-500 hover:text-gray-300 transition-colors">
+                        Clear Log
+                    </button>
+                </div>
+                <div id="terminalOutput" class="p-4 bg-black/90 code-font text-xs text-emerald-400 flex-1 overflow-y-auto leading-relaxed whitespace-pre-wrap">
+> Ready... System initial state: attemptsLeft = 3, isLocked = false.
+                </div>
+            </div>
+
+            <!-- Conceptual Explanation Box -->
+            <div class="bg-gray-900/90 border border-gray-800 rounded-2xl p-5 shadow-xl flex flex-col gap-2">
+                <h4 class="text-xs font-bold text-amber-400 uppercase tracking-wider flex items-center gap-2">
+                    <i class="fa-solid fa-lightbulb"></i> How the while loop works here:
+                </h4>
+                <p class="text-xs text-gray-300 leading-relaxed">
+                    A <code class="text-red-400 font-mono">while</code> loop keeps executing its block of code as long as its condition evaluates to <code class="text-emerald-400 font-mono">true</code>. Each wrong entry decrements <code class="text-amber-300 font-mono">attemptsLeft--</code>. When <code class="text-amber-300 font-mono">attemptsLeft</code> reaches <code class="text-red-400 font-mono">0</code>, <code class="text-mono text-gray-400">0 &gt; 0</code> becomes <code class="text-red-400 font-mono">false</code> and the loop terminates!
+                </p>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- Sound Effects & JavaScript Code Logic -->
+    <script>
+        // APP CONFIG & STATE
+        const CORRECT_PASSWORD = "secret123";
+        let attemptsLeft = 3;
+        let isLocked = false;
+        let iteration = 0;
+
+        // WEB AUDIO SYNTHESIZER FOR SFX
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSound(type) {
+            try {
+                if (audioCtx.state === 'suspended') audioCtx.resume();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                if (type === 'wrong') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(220, audioCtx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(110, audioCtx.currentTime + 0.25);
+                    gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.25);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.25);
+                } else if (type === 'granted') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
+                    osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.1); // E5
+                    osc.frequency.setValueAtTime(783.99, audioCtx.currentTime + 0.2); // G5
+                    gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.4);
+                } else if (type === 'locked') {
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+                    osc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.5);
+                    gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+                    osc.start();
+                    osc.stop(audioCtx.currentTime + 0.5);
+                }
+            } catch(e) {}
+        }
+
+        // DOM READY SETUP
+        window.addEventListener('DOMContentLoaded', () => {
+            renderCodeDisplay();
+            updateUI();
+        });
+
+        // RENDER CODE DISPLAY WITH HIGHLIGHT IDS
+        function renderCodeDisplay() {
+            const lines = [
+                { num: 1, code: `<span class="text-purple-400">let</span> <span class="text-blue-300">attemptsLeft</span> = <span class="text-amber-400">${attemptsLeft}</span>;` },
+                { num: 2, code: `<span class="text-purple-400">let</span> <span class="text-blue-300">isLocked</span> = <span class="text-amber-400">${isLocked}</span>;` },
+                { num: 3, code: `` },
+                { num: 4, code: `<span class="text-purple-400">while</span> (<span class="text-blue-300">attemptsLeft</span> > <span class="text-amber-400">0</span>) {` },
+                { num: 5, code: `  <span class="text-purple-400">if</span> (password === <span class="text-emerald-300">"secret123"</span>) {` },
+                { num: 6, code: `    <span class="text-yellow-300">console</span>.<span class="text-blue-400">log</span>(<span class="text-emerald-300">"Access Granted! 🎉"</span>);` },
+                { num: 7, code: `    <span class="text-purple-400">break</span>;` },
+                { num: 8, code: `  } <span class="text-purple-400">else</span> {` },
+                { num: 9, code: `    <span class="text-blue-300">attemptsLeft</span><span class="text-red-400">--</span>;` },
+                { num: 10, code: `    <span class="text-yellow-300">console</span>.<span class="text-blue-400">log</span>(<span class="text-red-300">\`Wrong! Attempts left: \${attemptsLeft}\`</span>);` },
+                { num: 11, code: `  }` },
+                { num: 12, code: `}` },
+                { num: 13, code: `` },
+                { num: 14, code: `<span class="text-purple-400">if</span> (<span class="text-blue-300">attemptsLeft</span> === <span class="text-amber-400">0</span>) {` },
+                { num: 15, code: `  <span class="text-blue-300">isLocked</span> = <span class="text-purple-400">true</span>;` },
+                { num: 16, code: `  <span class="text-yellow-300">console</span>.<span class="text-blue-400">log</span>(<span class="text-red-400">"🔒 Account Locked!"</span>);` },
+                { num: 17, code: `}` }
+            ];
+
+            const container = document.getElementById('codeDisplay');
+            container.innerHTML = lines.map(line => `
+                <div id="code-line-${line.num}" class="code-line flex items-start gap-3 py-0.5">
+                    <span class="text-gray-600 select-none w-5 text-right">${line.num}</span>
+                    <span class="flex-1">${line.code}</span>
+                </div>
+            `).join('');
+        }
+
+        function highlightCodeLine(lineNum, isSuccess = false) {
+            document.querySelectorAll('.code-line').forEach(el => {
+                el.classList.remove('active', 'active-success');
+            });
+            if (lineNum) {
+                const el = document.getElementById(`code-line-${lineNum}`);
+                if (el) {
+                    el.classList.add(isSuccess ? 'active-success' : 'active');
+                }
+            }
+        }
+
+        // UPDATE UI METRICS & INSPECTORS
+        function updateUI() {
+            // Hearts
+            const container = document.getElementById('heartsContainer');
+            document.getElementById('hearts-numeric').innerText = `${attemptsLeft} / 3`;
+            document.getElementById('badge-attempts-count').innerText = attemptsLeft;
+
+            let html = '';
+            for (let i = 0; i < 3; i++) {
+                if (i < attemptsLeft) {
+                    html += `<span class="text-red-500 drop-shadow-[0_0_10px_rgba(239,68,68,0.7)]">❤️</span>`;
+                } else {
+                    html += `<span class="text-gray-800 opacity-40">🖤</span>`;
+                }
+            }
+            container.innerHTML = html;
+
+            // Inspectors
+            document.getElementById('var-attempts').innerText = attemptsLeft;
+            document.getElementById('var-isLocked').innerText = isLocked;
+            
+            const condElem = document.getElementById('var-condition');
+            const isCondTrue = attemptsLeft > 0;
+            condElem.innerText = `attemptsLeft > 0 (${isCondTrue ? 'TRUE' : 'FALSE'})`;
+            condElem.className = `code-font text-xs font-bold ${isCondTrue ? 'text-emerald-400' : 'text-red-400'}`;
+
+            // Sync line 1 & 2 values in code box
+            renderCodeDisplay();
+        }
+
+        function appendConsoleLine(msg) {
+            const term = document.getElementById('terminalOutput');
+            term.innerText += '\n' + msg;
+            term.scrollTop = term.scrollHeight;
+        }
+
+        function clearConsole() {
+            document.getElementById('terminalOutput').innerText = '> Console cleared...';
+        }
+
+        function togglePasswordVisibility() {
+            const input = document.getElementById('passwordInput');
+            const icon = document.getElementById('eyeIcon');
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.className = 'fa-solid fa-eye-slash text-sm';
+            } else {
+                input.type = 'password';
+                icon.className = 'fa-solid fa-eye text-sm';
+            }
+        }
+
+        // SUBMIT PASSWORD LOGIC
+        function submitPassword() {
+            if (isLocked || attemptsLeft <= 0) return;
+
+            const inputElem = document.getElementById('passwordInput');
+            const entered = inputElem.value.trim();
+
+            if (!entered) {
+                appendConsoleLine('> [Prompt] Please enter a password before submitting!');
+                return;
+            }
+
+            processAttempt(entered);
+            inputElem.value = '';
+        }
+
+        function tryWrongPassword() {
+            if (isLocked || attemptsLeft <= 0) return;
+            processAttempt("wrongPass123");
+        }
+
+        function tryCorrectPassword() {
+            if (isLocked || attemptsLeft <= 0) return;
+            processAttempt(CORRECT_PASSWORD);
+        }
+
+        // CORE WHILE LOOP ITERATION SIMULATION
+        function processAttempt(pwd) {
+            iteration++;
+
+            // Highlight while condition evaluation
+            highlightCodeLine(4);
+            appendConsoleLine(`\n[Iteration #${iteration}] Evaluating while (attemptsLeft > 0) -> (${attemptsLeft} > 0) is TRUE`);
+
+            setTimeout(() => {
+                highlightCodeLine(5);
+                if (pwd === CORRECT_PASSWORD) {
+                    // SUCCESS PATH
+                    playSound('granted');
+                    setTimeout(() => highlightCodeLine(6, true), 150);
+                    setTimeout(() => highlightCodeLine(7, true), 300);
+
+                    appendConsoleLine(`> ✅ Access Granted! Correct password match.`);
+                    appendConsoleLine(`> Executed break; statement — exiting while loop!`);
+
+                    setTimeout(() => {
+                        document.getElementById('granted-overlay').classList.remove('hidden');
+                    }, 500);
+
+                } else {
+                    // WRONG PASSWORD PATH
+                    playSound('wrong');
+
+                    // Shake card
+                    const card = document.getElementById('login-card');
+                    card.classList.add('shake-animation');
+                    setTimeout(() => card.classList.remove('shake-animation'), 400);
+
+                    setTimeout(() => highlightCodeLine(8), 150);
+                    setTimeout(() => highlightCodeLine(9), 300);
+
+                    attemptsLeft--;
+                    updateUI();
+
+                    appendConsoleLine(`> ❌ Incorrect password! Executing attemptsLeft-- -> Value is now: ${attemptsLeft}`);
+
+                    if (attemptsLeft === 0) {
+                        // LOCKOUT TRIGGER
+                        setTimeout(() => {
+                            playSound('locked');
+                            highlightCodeLine(4); // Condition check 0 > 0 -> FALSE
+                            appendConsoleLine(`\n> [Loop Condition Re-check] while (attemptsLeft > 0) -> (0 > 0) is FALSE!`);
+                            appendConsoleLine(`> Loop terminated.`);
+
+                            setTimeout(() => {
+                                highlightCodeLine(14);
+                                setTimeout(() => highlightCodeLine(15), 150);
+                                setTimeout(() => highlightCodeLine(16), 300);
+
+                                isLocked = true;
+                                updateUI();
+
+                                appendConsoleLine(`> 🔒 isLocked set to TRUE! Account locked after 3 failed attempts.`);
+
+                                const overlay = document.getElementById('locked-overlay');
+                                overlay.classList.remove('hidden');
+                                card.classList.add('glow-locked');
+                            }, 300);
+                        }, 400);
+                    }
+                }
+            }, 250);
+        }
+
+        // RESET APPLICATION
+        function resetApp() {
+            attemptsLeft = 3;
+            isLocked = false;
+            iteration = 0;
+
+            document.getElementById('passwordInput').value = '';
+            document.getElementById('locked-overlay').classList.add('hidden');
+            document.getElementById('granted-overlay').classList.add('hidden');
+
+            const card = document.getElementById('login-card');
+            card.classList.remove('glow-locked');
+
+            highlightCodeLine(1);
+            updateUI();
+            clearConsole();
+            appendConsoleLine(`> System reset. Starting parameters: attemptsLeft = 3, isLocked = false.`);
+        }
+    </script>
+</body>
+</html>
